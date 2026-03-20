@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>VoiceSync – TTS & STT App</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════
+   ROOT & RESET
+═══════════════════════════════════════ */
+:root{
+  --bg:#0d0f1a;
+  --surface:#161929;
+  --surface2:#1e2236;
+  --surface3:#252a42;
+  --card:rgba(30,34,54,0.95);
+  --border:rgba(255,255,255,0.07);
+  --accent:#6c63ff;
+  --accent2:#ff6b9d;
+  --accent3:#43e97b;
+  --accent4:#f7971e;
+  --text:#e8eaf6;
+  --text2:#9098b8;
+  --text3:#5a6080;
+  --radius:20px;
+  --radius-sm:12px;
+  --shadow:0 8px 32px rgba(0,0,0,0.4);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html{height:100%;}
+body{
+  min-height:100%;
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Nunito',sans-serif;
+  overflow-x:hidden;
+  padding-bottom:40px;
+}
+
+/* ═══════════════════════════════════════
+   ANIMATED BACKGROUND
+═══════════════════════════════════════ */
+.bg-glow{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 70% 50% at 15% 10%, rgba(108,99,255,0.1) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 85% 80%, rgba(255,107,157,0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 60% at 50% 50%, rgba(67,233,123,0.04) 0%, transparent 70%);
+}
+.bg-grid{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(108,99,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(108,99,255,0.03) 1px, transparent 1px);
+  background-size:32px 32px;
+}
+
+/* ═══════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════ */
+#app{position:relative;z-index:1;max-width:480px;margin:0 auto;padding:0 16px;}
+
+/* ═══════════════════════════════════════
+   HEADER
+═══════════════════════════════════════ */
+.header{
+  padding:24px 4px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);
+  animation:fadeDown .6s ease both;
+}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-icon{
+  width:44px;height:44px;border-radius:14px;
+  background:linear-gradient(135deg,var(--accent),#a78bfa);
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;
+  box-shadow:0 4px 20px rgba(108,99,255,0.4);
+}
+.logo-name{
+  font-family:'Orbitron',monospace;
+  font-size:20px;font-weight:900;
+  letter-spacing:-0.5px;
+  background:linear-gradient(135deg,#fff,#a78bfa);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.logo-tag{font-size:10px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;}
+.header-right{display:flex;align-items:center;gap:8px;}
+.status-pill{
+  display:flex;align-items:center;gap:6px;
+  background:rgba(67,233,123,0.12);
+  border:1px solid rgba(67,233,123,0.25);
+  border-radius:20px;padding:5px 12px;
+  font-size:11px;font-weight:700;letter-spacing:1px;color:var(--accent3);
+}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--accent3);animation:blink 2s infinite;}
+
+/* ═══════════════════════════════════════
+   TAB NAV
+═══════════════════════════════════════ */
+.tab-nav{
+  display:flex;gap:6px;margin:18px 0 0;
+  background:var(--surface);
+  border-radius:var(--radius);
+  padding:5px;
+  border:1px solid var(--border);
+  animation:fadeUp .6s .08s ease both;
+}
+.tab-btn{
+  flex:1;padding:12px 0;border:none;border-radius:14px;
+  background:transparent;color:var(--text2);
+  font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;
+  cursor:pointer;transition:all .25s;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.tab-btn.active{
+  background:var(--surface3);
+  color:var(--text);
+  box-shadow:0 2px 12px rgba(0,0,0,0.35);
+}
+.tab-btn.active[data-tab="stt"]{color:var(--accent);}
+.tab-btn.active[data-tab="tts"]{color:var(--accent2);}
+.tab-btn.active[data-tab="hist"]{color:var(--accent3);}
+
+/* ═══════════════════════════════════════
+   PANELS
+═══════════════════════════════════════ */
+.panel{display:none;padding:16px 0 0;flex-direction:column;gap:14px;}
+.panel.active{display:flex;animation:fadeUp .35s ease both;}
+
+/* ═══════════════════════════════════════
+   CARDS
+═══════════════════════════════════════ */
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:18px;
+  box-shadow:var(--shadow);
+  backdrop-filter:blur(12px);
+}
+.card-title{
+  font-size:11px;font-weight:800;
+  letter-spacing:2px;text-transform:uppercase;
+  color:var(--text2);
+  margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;
+}
+.card-title .ct-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--accent);flex-shrink:0;
+}
+.card-title .ct-dot.pink{background:var(--accent2);}
+.card-title .ct-dot.green{background:var(--accent3);}
+.card-title .ct-dot.orange{background:var(--accent4);}
+
+/* ═══════════════════════════════════════
+   LANGUAGE SELECT
+═══════════════════════════════════════ */
+.lang-row{display:flex;gap:10px;align-items:center;}
+.flag-box{
+  width:46px;height:46px;border-radius:12px;
+  background:var(--surface3);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;flex-shrink:0;
+}
+.select-wrap{flex:1;position:relative;}
+.select-wrap select{
+  width:100%;
+  background:var(--surface3);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:12px 38px 12px 14px;
+  color:var(--text);
+  font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;
+  cursor:pointer;appearance:none;
+}
+.select-wrap::after{
+  content:'▾';position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  color:var(--text2);pointer-events:none;font-size:14px;
+}
+select:focus{outline:none;border-color:var(--accent);}
+
+/* ═══════════════════════════════════════
+   MIC BUTTON — STT
+═══════════════════════════════════════ */
+.mic-stage{
+  display:flex;flex-direction:column;align-items:center;
+  padding:8px 0 4px;gap:16px;
+}
+.mic-ring-wrap{
+  position:relative;width:130px;height:130px;
+  display:flex;align-items:center;justify-content:center;
+}
+.ring{
+  position:absolute;border-radius:50%;
+  border:2px solid var(--accent);
+  opacity:0;
+}
+.ring-1{width:130px;height:130px;}
+.ring-2{width:104px;height:104px;}
+.ring-3{width:78px;height:78px;}
+.is-listening .ring-1{animation:ripple 1.8s 0s ease-out infinite;}
+.is-listening .ring-2{animation:ripple 1.8s .28s ease-out infinite;}
+.is-listening .ring-3{animation:ripple 1.8s .56s ease-out infinite;}
+
+.mic-btn{
+  position:relative;z-index:2;
+  width:76px;height:76px;border-radius:50%;
+  border:none;cursor:pointer;
+  background:var(--surface3);
+  box-shadow:0 0 0 2px var(--accent), 0 8px 28px rgba(108,99,255,0.35);
+  display:flex;align-items:center;justify-content:center;
+  transition:all .2s;
+  -webkit-tap-highlight-color:transparent;
+}
+.mic-btn:active{transform:scale(.91);}
+.mic-btn.on{
+  background:linear-gradient(135deg,rgba(255,107,157,0.2),rgba(108,99,255,0.2));
+  box-shadow:0 0 0 3px var(--accent2), 0 0 40px rgba(255,107,157,0.35);
+  animation:mic-pulse 1.1s infinite;
+}
+.mic-btn svg{width:34px;height:34px;pointer-events:none;}
+
+.mic-status{
+  font-size:13px;font-weight:700;color:var(--text2);letter-spacing:.5px;
+}
+.mic-status.on{color:var(--accent2);animation:blink .8s infinite;}
+
+/* WAVEFORM */
+.waveform{
+  display:flex;align-items:center;gap:3px;height:34px;
+  opacity:0;transition:opacity .3s;
+}
+.waveform.show{opacity:1;}
+.wbar{width:4px;background:var(--accent);border-radius:3px;height:5px;}
+.is-listening .wbar:nth-child(1){animation:wave .75s 0s infinite;}
+.is-listening .wbar:nth-child(2){animation:wave .75s .07s infinite;}
+.is-listening .wbar:nth-child(3){animation:wave .75s .14s infinite;}
+.is-listening .wbar:nth-child(4){animation:wave .75s .21s infinite;}
+.is-listening .wbar:nth-child(5){animation:wave .75s .28s infinite;}
+.is-listening .wbar:nth-child(6){animation:wave .75s .21s infinite;}
+.is-listening .wbar:nth-child(7){animation:wave .75s .14s infinite;}
+.is-listening .wbar:nth-child(8){animation:wave .75s .07s infinite;}
+.is-listening .wbar:nth-child(9){animation:wave .75s 0s infinite;}
+.is-listening .wbar:nth-child(10){animation:wave .75s .07s infinite;}
+.is-listening .wbar:nth-child(11){animation:wave .75s .14s infinite;}
+
+/* ═══════════════════════════════════════
+   TRANSCRIPT BOX
+═══════════════════════════════════════ */
+.transcript-box{
+  min-height:110px;max-height:180px;overflow-y:auto;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:14px;
+  font-size:15px;line-height:1.65;
+  transition:border-color .3s;
+  word-break:break-word;
+}
+.transcript-box::-webkit-scrollbar{width:4px;}
+.transcript-box::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.transcript-box .ph{color:var(--text3);font-style:italic;}
+.transcript-box .interim{color:var(--accent);opacity:.7;}
+.transcript-box.active-border{border-color:var(--accent2);}
+
+/* CONFIDENCE BAR */
+.conf-row{display:flex;align-items:center;gap:10px;margin-top:8px;}
+.conf-label{font-size:11px;color:var(--text3);white-space:nowrap;}
+.conf-track{flex:1;height:5px;background:var(--surface3);border-radius:3px;overflow:hidden;}
+.conf-fill{height:5px;border-radius:3px;background:linear-gradient(90deg,var(--accent3),#38ef7d);width:0%;transition:width .4s;}
+.conf-val{font-size:11px;font-weight:800;color:var(--accent3);min-width:36px;text-align:right;}
+
+/* ═══════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════ */
+.btn-row{display:flex;gap:8px;}
+.btn{
+  flex:1;padding:13px 10px;border:none;border-radius:var(--radius-sm);
+  font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;
+  letter-spacing:.3px;cursor:pointer;transition:all .18s;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.btn:active{transform:scale(.95);}
+.btn:disabled{opacity:.38;cursor:not-allowed;transform:none;}
+.btn-primary{
+  background:linear-gradient(135deg,var(--accent),#8b5cf6);
+  color:#fff;box-shadow:0 4px 18px rgba(108,99,255,0.35);
+}
+.btn-pink{
+  background:linear-gradient(135deg,var(--accent2),#e91e8c);
+  color:#fff;box-shadow:0 4px 18px rgba(255,107,157,0.35);
+}
+.btn-green{
+  background:linear-gradient(135deg,var(--accent3),#00b09b);
+  color:#fff;box-shadow:0 4px 18px rgba(67,233,123,0.3);
+}
+.btn-ghost{
+  background:var(--surface3);color:var(--text);
+  border:1px solid var(--border);
+}
+.btn-danger{
+  background:linear-gradient(135deg,#ff4757,#c0392b);
+  color:#fff;box-shadow:0 4px 14px rgba(255,71,87,0.3);
+}
+
+/* ═══════════════════════════════════════
+   TTS SECTION
+═══════════════════════════════════════ */
+.tts-textarea{
+  width:100%;min-height:126px;resize:none;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:14px;
+  color:var(--text);
+  font-family:'Nunito',sans-serif;font-size:14px;line-height:1.65;
+}
+.tts-textarea:focus{outline:none;border-color:var(--accent2);box-shadow:0 0 0 3px rgba(255,107,157,0.1);}
+.tts-textarea::placeholder{color:var(--text3);}
+.char-count{font-size:11px;color:var(--text3);text-align:right;margin-top:5px;}
+
+/* VOICE GRID */
+.voice-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.voice-chip{
+  padding:10px 12px;
+  background:var(--surface2);
+  border:1.5px solid var(--border);
+  border-radius:var(--radius-sm);
+  cursor:pointer;transition:all .2s;
+  display:flex;flex-direction:column;gap:2px;align-items:center;
+  text-align:center;
+}
+.voice-chip:hover,.voice-chip.picked{
+  border-color:var(--accent2);
+  background:rgba(255,107,157,0.07);
+}
+.vc-name{font-weight:800;font-size:13px;color:var(--text);}
+.vc-lang{font-size:10px;color:var(--text3);}
+.vc-check{font-size:14px;display:none;}
+.voice-chip.picked .vc-check{display:block;}
+
+/* SLIDERS */
+.sliders{display:flex;flex-direction:column;gap:14px;}
+.sl-row{display:flex;align-items:center;gap:12px;}
+.sl-label{font-size:12px;font-weight:800;color:var(--text2);min-width:60px;letter-spacing:.5px;}
+.sl-wrap{flex:1;display:flex;align-items:center;gap:10px;}
+input[type=range]{
+  flex:1;appearance:none;height:5px;border-radius:5px;
+  background:var(--surface3);outline:none;cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  appearance:none;width:20px;height:20px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent2),#e91e8c);
+  box-shadow:0 2px 8px rgba(255,107,157,0.4);cursor:pointer;transition:transform .15s;
+}
+input[type=range]::-webkit-slider-thumb:active{transform:scale(1.3);}
+.sl-val{font-size:12px;font-weight:800;color:var(--accent2);min-width:38px;text-align:right;}
+
+/* SPEAKING VISUALIZER */
+.speak-vis{
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  padding:8px 0;opacity:0;transition:opacity .3s;
+}
+.speak-vis.on{opacity:1;}
+.speak-circle{
+  width:58px;height:58px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent2),#a855f7);
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;
+  box-shadow:0 8px 24px rgba(255,107,157,0.4);
+  animation:speak-pulse 1.1s infinite;
+}
+.speak-bars{display:flex;align-items:center;gap:3px;height:28px;}
+.sb{width:4px;border-radius:3px;background:linear-gradient(to top,var(--accent2),#a855f7);}
+.speak-vis.on .sb:nth-child(1){animation:wave .8s 0s infinite;}
+.speak-vis.on .sb:nth-child(2){animation:wave .8s .1s infinite;}
+.speak-vis.on .sb:nth-child(3){animation:wave .8s .2s infinite;}
+.speak-vis.on .sb:nth-child(4){animation:wave .8s .3s infinite;}
+.speak-vis.on .sb:nth-child(5){animation:wave .8s .2s infinite;}
+.speak-vis.on .sb:nth-child(6){animation:wave .8s .1s infinite;}
+.speak-vis.on .sb:nth-child(7){animation:wave .8s 0s infinite;}
+.speak-label{font-size:12px;font-weight:700;letter-spacing:1.5px;color:var(--accent2);}
+
+/* QUICK PHRASES */
+.phrases-wrap{display:flex;flex-wrap:wrap;gap:7px;}
+.phrase-chip{
+  padding:7px 13px;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:20px;
+  font-size:12px;font-weight:700;color:var(--text2);
+  cursor:pointer;transition:all .18s;
+}
+.phrase-chip:hover,.phrase-chip:active{
+  background:rgba(255,107,157,0.1);
+  border-color:var(--accent2);color:var(--accent2);
+  transform:translateY(-1px);
+}
+
+/* ═══════════════════════════════════════
+   HISTORY PANEL
+═══════════════════════════════════════ */
+.hist-list{display:flex;flex-direction:column;gap:9px;max-height:60vh;overflow-y:auto;padding-right:2px;}
+.hist-list::-webkit-scrollbar{width:4px;}
+.hist-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.hist-item{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:12px 14px;
+  display:flex;gap:10px;align-items:flex-start;
+  animation:fadeUp .3s ease both;
+  transition:border-color .2s;
+}
+.hist-item:hover{border-color:rgba(255,255,255,0.14);}
+.hi-icon{font-size:18px;flex-shrink:0;margin-top:1px;}
+.hi-body{flex:1;min-width:0;}
+.hi-text{font-size:13px;line-height:1.5;color:var(--text);word-break:break-word;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.hi-meta{display:flex;gap:8px;margin-top:4px;align-items:center;}
+.hi-type{font-size:10px;font-weight:800;letter-spacing:1.5px;padding:2px 8px;border-radius:10px;}
+.hi-type.stt{background:rgba(108,99,255,0.18);color:var(--accent);}
+.hi-type.tts{background:rgba(255,107,157,0.18);color:var(--accent2);}
+.hi-time{font-size:10px;color:var(--text3);}
+.hi-actions{display:flex;gap:6px;margin-top:6px;}
+.hi-btn{padding:4px 10px;border:1px solid var(--border);border-radius:8px;
+  background:transparent;color:var(--text2);font-size:11px;font-weight:700;
+  cursor:pointer;transition:all .15s;}
+.hi-btn:hover{background:var(--surface3);color:var(--text);}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:40px 20px;color:var(--text3);}
+.empty-state .es-icon{font-size:44px;margin-bottom:12px;}
+.empty-state p{font-size:14px;line-height:1.6;}
+
+/* ═══════════════════════════════════════
+   ALERTS
+═══════════════════════════════════════ */
+.alert{
+  background:rgba(255,71,87,0.1);
+  border:1px solid rgba(255,71,87,0.3);
+  border-radius:var(--radius-sm);
+  padding:12px 14px;font-size:13px;color:#ff6b6b;
+  display:none;align-items:center;gap:8px;
+  margin-bottom:14px;
+}
+.alert.show{display:flex;}
+
+/* ═══════════════════════════════════════
+   SEND BRIDGE BANNER
+═══════════════════════════════════════ */
+.send-banner{
+  background:linear-gradient(135deg,rgba(108,99,255,0.15),rgba(255,107,157,0.1));
+  border:1px solid rgba(108,99,255,0.25);
+  border-radius:var(--radius-sm);
+  padding:12px 14px;
+  display:flex;align-items:center;gap:10px;
+  font-size:13px;font-weight:600;color:var(--text2);
+}
+.send-banner .sb-icon{font-size:20px;}
+.send-banner button{
+  margin-left:auto;padding:7px 14px;border-radius:8px;border:none;
+  background:var(--accent);color:#fff;font-family:'Nunito',sans-serif;
+  font-size:12px;font-weight:800;cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.send-banner button:active{transform:scale(.95);}
+
+/* ═══════════════════════════════════════
+   FOOTER INFO
+═══════════════════════════════════════ */
+.footer{
+  margin-top:24px;padding:16px 4px;
+  border-top:1px solid var(--border);
+  text-align:center;font-size:11px;color:var(--text3);line-height:1.8;
+}
+.footer .fg{color:var(--accent);}
+
+/* ═══════════════════════════════════════
+   TOAST
+═══════════════════════════════════════ */
+.toast{
+  position:fixed;bottom:28px;left:50%;
+  transform:translateX(-50%) translateY(80px);
+  background:rgba(30,34,54,0.95);
+  border:1px solid var(--border);
+  backdrop-filter:blur(12px);
+  color:var(--text);border-radius:var(--radius-sm);
+  padding:10px 22px;font-size:13px;font-weight:700;
+  z-index:999;pointer-events:none;white-space:nowrap;
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:var(--shadow);
+}
+.toast.show{transform:translateX(-50%) translateY(0);}
+
+/* ═══════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════ */
+@keyframes fadeDown{from{opacity:0;transform:translateY(-16px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+@keyframes ripple{0%{transform:scale(.55);opacity:.7;}100%{transform:scale(1);opacity:0;}}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.4;}}
+@keyframes mic-pulse{0%,100%{box-shadow:0 0 0 3px var(--accent2),0 0 30px rgba(255,107,157,.4);}50%{box-shadow:0 0 0 5px var(--accent2),0 0 50px rgba(255,107,157,.6);}}
+@keyframes speak-pulse{0%,100%{box-shadow:0 8px 24px rgba(255,107,157,.4);}50%{box-shadow:0 8px 40px rgba(255,107,157,.7);}}
+@keyframes wave{0%,100%{height:5px;}50%{height:24px;}}
+</style>
+</head>
+<body>
+<div class="bg-glow"></div>
+<div class="bg-grid"></div>
+
+<div id="app">
+
+  <!-- ══ HEADER ══ -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">🎙️</div>
+      <div>
+        <div class="logo-name">VoiceSync</div>
+        <div class="logo-tag">TTS &amp; STT App</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="status-pill">
+        <span class="status-dot"></span>READY
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TAB NAV ══ -->
+  <div class="tab-nav">
+    <button class="tab-btn active" data-tab="stt" onclick="switchTab('stt')">
+      🎤 Speech→Text
+    </button>
+    <button class="tab-btn" data-tab="tts" onclick="switchTab('tts')">
+      🔊 Text→Speech
+    </button>
+    <button class="tab-btn" data-tab="hist" onclick="switchTab('hist')">
+      📋 History
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PANEL 1: SPEECH TO TEXT
+  ══════════════════════════════════════ -->
+  <div class="panel active" id="panel-stt">
+
+    <div class="alert show" id="stt-alert" style="display:none;">
+      ⚠️ Speech Recognition requires Chrome, Edge, or Safari 14+.
+    </div>
+
+    <!-- Language -->
+    <div class="card">
+      <div class="card-title"><span class="ct-dot"></span>Recognition Language</div>
+      <div class="lang-row">
+        <div class="flag-box" id="stt-flag">🇺🇸</div>
+        <div class="select-wrap">
+          <select id="stt-lang" onchange="updateFlag('stt')">
+            <option value="en-US" data-f="🇺🇸">English (United States)</option>
+            <option value="en-GB" data-f="🇬🇧">English (United Kingdom)</option>
+            <option value="fil-PH" data-f="🇵🇭">Filipino / Tagalog</option>
+            <option value="ceb-PH" data-f="🇵🇭">Cebuano (Philippines)</option>
+            <option value="es-ES" data-f="🇪🇸">Spanish (Spain)</option>
+            <option value="fr-FR" data-f="🇫🇷">French</option>
+            <option value="de-DE" data-f="🇩🇪">German</option>
+            <option value="ja-JP" data-f="🇯🇵">Japanese</option>
+            <option value="zh-CN" data-f="🇨🇳">Chinese (Simplified)</option>
+            <option value="ko-KR" data-f="🇰🇷">Korean</option>
+            <option value="ar-SA" data-f="🇸🇦">Arabic</option>
+            <option value="pt-BR" data-f="🇧🇷">Portuguese (Brazil)</option>
+            <option value="hi-IN" data-f="🇮🇳">Hindi</option>
+            <option value="id-ID" data-f="🇮🇩">Indonesian</option>
+            <option value="vi-VN" data-f="🇻🇳">Vietnamese</option>
+            <option value="th-TH" data-f="🇹🇭">Thai</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Microphone -->
+    <div class="card" style="text-align:center;">
+      <div class="card-title" style="justify-content:center;"><span class="ct-dot"></span>Microphone Input</div>
+      <div class="mic-stage">
+        <div class="mic-ring-wrap" id="mic-wrap">
+          <div class="ring ring-1"></div>
+          <div class="ring ring-2"></div>
+          <div class="ring ring-3"></div>
+          <button class="mic-btn" id="mic-btn" onclick="toggleSTT()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="mic-icon">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" fill="rgba(108,99,255,0.3)" stroke="#a78bfa"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="#a78bfa"/>
+              <line x1="12" y1="19" x2="12" y2="23" stroke="#a78bfa"/>
+              <line x1="8" y1="23" x2="16" y2="23" stroke="#a78bfa"/>
+            </svg>
+          </button>
+        </div>
+        <div class="mic-status" id="mic-status">Tap to start listening</div>
+        <div class="waveform" id="waveform">
+          <div class="wbar"></div><div class="wbar"></div><div class="wbar"></div>
+          <div class="wbar"></div><div class="wbar"></div><div class="wbar"></div>
+          <div class="wbar"></div><div class="wbar"></div><div class="wbar"></div>
+          <div class="wbar"></div><div class="wbar"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transcript -->
+    <div class="card">
+      <div class="card-title"><span class="ct-dot"></span>Live Transcript</div>
+      <div class="transcript-box" id="transcript">
+        <span class="ph">Your speech will appear here in real time…</span>
+      </div>
+      <!-- Confidence bar -->
+      <div class="conf-row" id="conf-row" style="display:none;">
+        <span class="conf-label">Confidence</span>
+        <div class="conf-track"><div class="conf-fill" id="conf-fill"></div></div>
+        <span class="conf-val" id="conf-val">—</span>
+      </div>
+    </div>
+
+    <!-- Send to TTS banner -->
+    <div class="send-banner" id="send-banner" style="display:none;">
+      <span class="sb-icon">📤</span>
+      <span>Transcript ready to speak</span>
+      <button onclick="sendToTTS()">Send to TTS →</button>
+    </div>
+
+    <!-- Actions -->
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="copySTT()">📋 Copy</button>
+      <button class="btn btn-ghost" onclick="sendToTTS()">📤 → TTS</button>
+      <button class="btn btn-ghost" onclick="shareSTT()">🔗 Share</button>
+      <button class="btn btn-danger" onclick="clearSTT()">🗑️</button>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PANEL 2: TEXT TO SPEECH
+  ══════════════════════════════════════ -->
+  <div class="panel" id="panel-tts">
+
+    <div class="alert" id="tts-alert">
+      ⚠️ Text-to-Speech is not supported on this browser.
+    </div>
+
+    <!-- Text input -->
+    <div class="card">
+      <div class="card-title"><span class="ct-dot pink"></span>Text to Speak</div>
+      <textarea class="tts-textarea" id="tts-text"
+        placeholder="Type or paste text here… or send it from the Speech→Text tab."
+        maxlength="2000" oninput="updateChar()"></textarea>
+      <div class="char-count"><span id="char-cnt">0</span> / 2000 characters</div>
+    </div>
+
+    <!-- Voice selection -->
+    <div class="card">
+      <div class="card-title"><span class="ct-dot pink"></span>Voice Selection</div>
+      <div class="voice-grid" id="voice-grid">
+        <div class="voice-chip picked" id="vc-0" onclick="pickVoice(0)">
+          <span class="vc-check">✅</span>
+          <span class="vc-name">Default</span>
+          <span class="vc-lang">System Voice</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Voice controls -->
+    <div class="card">
+      <div class="card-title"><span class="ct-dot pink"></span>Voice Controls</div>
+      <div class="sliders">
+        <div class="sl-row">
+          <span class="sl-label">Rate</span>
+          <div class="sl-wrap">
+            <input type="range" id="sl-rate" min="0.5" max="2" step="0.1" value="1" oninput="slVal('rate')"/>
+            <span class="sl-val" id="v-rate">1.0×</span>
+          </div>
+        </div>
+        <div class="sl-row">
+          <span class="sl-label">Pitch</span>
+          <div class="sl-wrap">
+            <input type="range" id="sl-pitch" min="0" max="2" step="0.1" value="1" oninput="slVal('pitch')"/>
+            <span class="sl-val" id="v-pitch">1.0</span>
+          </div>
+        </div>
+        <div class="sl-row">
+          <span class="sl-label">Volume</span>
+          <div class="sl-wrap">
+            <input type="range" id="sl-vol" min="0" max="1" step="0.05" value="1" oninput="slVal('vol')"/>
+            <span class="sl-val" id="v-vol">100%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Speaking visualizer -->
+    <div class="speak-vis" id="speak-vis">
+      <div class="speak-circle">🔊</div>
+      <div class="speak-bars">
+        <div class="sb"></div><div class="sb"></div><div class="sb"></div>
+        <div class="sb"></div><div class="sb"></div><div class="sb"></div><div class="sb"></div>
+      </div>
+      <div class="speak-label">SPEAKING…</div>
+    </div>
+
+    <!-- TTS Controls -->
+    <div class="btn-row">
+      <button class="btn btn-pink" id="speak-btn" onclick="doSpeak()">▶ Speak</button>
+      <button class="btn btn-ghost" id="pause-btn" onclick="pauseResume()" disabled>⏸ Pause</button>
+      <button class="btn btn-ghost" id="stop-btn" onclick="stopSpeak()" style="color:#ff4757;" disabled>⏹ Stop</button>
+    </div>
+
+    <!-- Quick Phrases -->
+    <div class="card">
+      <div class="card-title"><span class="ct-dot orange"></span>Quick Phrases</div>
+      <div class="phrases-wrap">
+        <span class="phrase-chip" onclick="loadPhrase('Hello! How are you today?')">👋 Hello</span>
+        <span class="phrase-chip" onclick="loadPhrase('Thank you very much!')">🙏 Thank You</span>
+        <span class="phrase-chip" onclick="loadPhrase('Please wait a moment.')">⏳ Wait</span>
+        <span class="phrase-chip" onclick="loadPhrase('Could you please repeat that?')">🔁 Repeat</span>
+        <span class="phrase-chip" onclick="loadPhrase('I understand. Let me help you with that.')">✅ Understood</span>
+        <span class="phrase-chip" onclick="loadPhrase('Goodbye! Have a wonderful day!')">👋 Goodbye</span>
+        <span class="phrase-chip" onclick="loadPhrase('This is a text-to-speech demonstration using VoiceSync.')">🎙️ Demo</span>
+        <span class="phrase-chip" onclick="loadPhrase('Magandang araw! Kumusta ka?')">🇵🇭 Filipino</span>
+        <span class="phrase-chip" onclick="loadPhrase('Maayong buntag! Kumusta man ka?')">🇵🇭 Bisaya</span>
+        <span class="phrase-chip" onclick="loadPhrase('The quick brown fox jumps over the lazy dog.')">🦊 Pangram</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PANEL 3: HISTORY
+  ══════════════════════════════════════ -->
+  <div class="panel" id="panel-hist">
+    <div class="card" style="padding:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div class="card-title" style="margin:0;"><span class="ct-dot green"></span>Session History</div>
+        <button class="btn btn-ghost" style="flex:0;padding:6px 12px;font-size:12px;" onclick="clearHistory()">Clear All</button>
+      </div>
+      <div class="hist-list" id="hist-list">
+        <div class="empty-state">
+          <div class="es-icon">📭</div>
+          <p>No history yet.<br/>Start speaking or typing<br/>to see your sessions here.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ FOOTER ══ -->
+  <div class="footer">
+    <span class="fg">CIT 238 – Mobile Application Development</span><br/>
+    VoiceSync App · School of ICT<br/>
+    West Visayas State University · 2nd Sem SY 2025–2026
+  </div>
+
+</div><!-- /app -->
+
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════ -->
+<script>
+// ══════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════
+var recog = null;
+var isListening = false;
+var finalTxt = '';
+var voices = [];
+var pickedVoice = 0;
+var paused = false;
+var history = [];
+
+// ══════════════════════════════════════
+//  TABS
+// ══════════════════════════════════════
+function switchTab(t){
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
+  document.querySelector('[data-tab="'+t+'"]').classList.add('active');
+  document.getElementById('panel-'+t).classList.add('active');
+}
+
+// ══════════════════════════════════════
+//  FLAG UPDATER
+// ══════════════════════════════════════
+function updateFlag(which){
+  var sel = document.getElementById(which+'-lang');
+  var opt = sel.options[sel.selectedIndex];
+  var flag = opt.getAttribute('data-f')||'🌐';
+  document.getElementById(which+'-flag').textContent = flag;
+}
+
+// ══════════════════════════════════════
+//  SPEECH TO TEXT (STT)
+// ══════════════════════════════════════
+function initSTT(){
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){
+    document.getElementById('stt-alert').style.display='flex';
+    document.getElementById('mic-btn').disabled = true;
+    return;
+  }
+  recog = new SR();
+  recog.continuous = true;
+  recog.interimResults = true;
+  recog.maxAlternatives = 1;
+
+  recog.onstart = function(){
+    isListening = true;
+    document.getElementById('mic-btn').classList.add('on');
+    document.getElementById('mic-wrap').classList.add('is-listening');
+    document.getElementById('waveform').classList.add('show');
+    document.getElementById('mic-status').textContent = 'Listening… tap to stop';
+    document.getElementById('mic-status').classList.add('on');
+    document.getElementById('transcript').classList.add('active-border');
+  };
+
+  recog.onresult = function(e){
+    var interim = '';
+    finalTxt = '';
+    var bestConf = 0;
+    for(var i=0; i<e.results.length; i++){
+      if(e.results[i].isFinal){
+        finalTxt += e.results[i][0].transcript + ' ';
+        if(e.results[i][0].confidence > bestConf) bestConf = e.results[i][0].confidence;
+      } else {
+        interim += e.results[i][0].transcript;
+      }
+    }
+    document.getElementById('transcript').innerHTML =
+      '<span>'+finalTxt+'</span><span class="interim">'+interim+'</span>';
+
+    // Show confidence
+    if(bestConf > 0){
+      var pct = Math.round(bestConf*100);
+      document.getElementById('conf-row').style.display = 'flex';
+      document.getElementById('conf-fill').style.width = pct+'%';
+      document.getElementById('conf-val').textContent = pct+'%';
+    }
+    // Show send banner
+    if(finalTxt.trim()){
+      document.getElementById('send-banner').style.display = 'flex';
+    }
+  };
+
+  recog.onerror = function(e){
+    var msgs = {
+      'not-allowed':'🚫 Microphone access denied. Please allow it in your browser settings.',
+      'no-speech':'🔇 No speech detected. Please try again.',
+      'network':'📡 Network error. Check your connection.',
+      'audio-capture':'🎤 No microphone found on this device.'
+    };
+    showToast(msgs[e.error] || 'Error: '+e.error);
+    stopSTT();
+  };
+
+  recog.onend = function(){
+    if(isListening){
+      try{ recog.start(); } catch(ex){ stopSTT(); }
+    } else {
+      stopSTT();
+      if(finalTxt.trim()){
+        addHistory(finalTxt.trim(), 'stt');
+      }
+    }
+  };
+}
+
+function toggleSTT(){
+  if(!recog){ showToast('⚠️ Speech Recognition not available'); return; }
+  if(isListening){
+    isListening = false;
+    recog.stop();
+  } else {
+    finalTxt = '';
+    document.getElementById('transcript').innerHTML = '<span class="ph">Listening…</span>';
+    document.getElementById('conf-row').style.display = 'none';
+    document.getElementById('send-banner').style.display = 'none';
+    recog.lang = document.getElementById('stt-lang').value;
+    try{ recog.start(); } catch(e){ showToast('Could not start microphone.'); }
+  }
+}
+
+function stopSTT(){
+  isListening = false;
+  document.getElementById('mic-btn').classList.remove('on');
+  document.getElementById('mic-wrap').classList.remove('is-listening');
+  document.getElementById('waveform').classList.remove('show');
+  document.getElementById('mic-status').textContent = 'Tap to start listening';
+  document.getElementById('mic-status').classList.remove('on');
+  document.getElementById('transcript').classList.remove('active-border');
+}
+
+function clearSTT(){
+  finalTxt = '';
+  document.getElementById('transcript').innerHTML = '<span class="ph">Your speech will appear here in real time…</span>';
+  document.getElementById('conf-row').style.display = 'none';
+  document.getElementById('send-banner').style.display = 'none';
+  showToast('🗑️ Transcript cleared');
+}
+
+function copySTT(){
+  var t = finalTxt.trim();
+  if(!t){ showToast('Nothing to copy yet'); return; }
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(t).then(function(){ showToast('📋 Copied to clipboard!'); });
+  } else {
+    var a = document.createElement('textarea');
+    a.value = t; document.body.appendChild(a); a.select();
+    document.execCommand('copy'); document.body.removeChild(a);
+    showToast('📋 Copied!');
+  }
+}
+
+function shareSTT(){
+  var t = finalTxt.trim();
+  if(!t){ showToast('Nothing to share yet'); return; }
+  if(navigator.share){
+    navigator.share({title:'VoiceSync Transcript',text:t})
+      .then(function(){ showToast('🔗 Shared!'); })
+      .catch(function(){});
+  } else {
+    copySTT();
+  }
+}
+
+function sendToTTS(){
+  var t = finalTxt.trim();
+  if(!t){ showToast('No transcript to send'); return; }
+  document.getElementById('tts-text').value = t;
+  updateChar();
+  switchTab('tts');
+  showToast('📤 Sent to Text→Speech!');
+}
+
+// ══════════════════════════════════════
+//  TEXT TO SPEECH (TTS)
+// ══════════════════════════════════════
+function initTTS(){
+  if(!window.speechSynthesis){
+    document.getElementById('tts-alert').classList.add('show');
+    return;
+  }
+  function loadVoices(){
+    voices = window.speechSynthesis.getVoices();
+    buildVoiceGrid();
+  }
+  loadVoices();
+  window.speechSynthesis.onvoiceschanged = loadVoices;
+}
+
+function buildVoiceGrid(){
+  var pref = voices.filter(function(v){
+    return v.lang.startsWith('en') || v.lang.startsWith('fil') || v.lang.startsWith('tl');
+  }).slice(0,8);
+  var list = pref.length ? pref : voices.slice(0,8);
+  var grid = document.getElementById('voice-grid');
+  if(!list.length){
+    grid.innerHTML = '<div style="color:var(--text3);font-size:13px;">Using system default voice.</div>';
+    return;
+  }
+  grid.innerHTML = list.map(function(v,i){
+    return '<div class="voice-chip'+(i===0?' picked':'') +'" id="vc-'+i+'" onclick="pickVoice('+i+')">'
+      +'<span class="vc-check">✅</span>'
+      +'<span class="vc-name">'+v.name.split(' ').slice(0,2).join(' ')+'</span>'
+      +'<span class="vc-lang">'+v.lang+'</span>'
+      +'</div>';
+  }).join('');
+  pickedVoice = 0;
+}
+
+function pickVoice(i){
+  document.querySelectorAll('.voice-chip').forEach(function(c){c.classList.remove('picked');});
+  var el = document.getElementById('vc-'+i);
+  if(el) el.classList.add('picked');
+  pickedVoice = i;
+}
+
+function doSpeak(){
+  if(!window.speechSynthesis){ showToast('⚠️ TTS not supported'); return; }
+  var txt = document.getElementById('tts-text').value.trim();
+  if(!txt){ showToast('Please enter some text first'); return; }
+  window.speechSynthesis.cancel();
+  var u = new SpeechSynthesisUtterance(txt);
+  var pref = voices.filter(function(v){ return v.lang.startsWith('en')||v.lang.startsWith('fil')||v.lang.startsWith('tl'); }).slice(0,8);
+  var vl = pref.length ? pref : voices.slice(0,8);
+  if(vl[pickedVoice]) u.voice = vl[pickedVoice];
+  u.rate   = parseFloat(document.getElementById('sl-rate').value);
+  u.pitch  = parseFloat(document.getElementById('sl-pitch').value);
+  u.volume = parseFloat(document.getElementById('sl-vol').value);
+
+  u.onstart = function(){
+    document.getElementById('speak-vis').classList.add('on');
+    document.getElementById('speak-btn').disabled = true;
+    document.getElementById('pause-btn').disabled = false;
+    document.getElementById('stop-btn').disabled = false;
+    paused = false;
+  };
+  u.onend = u.onerror = function(){
+    document.getElementById('speak-vis').classList.remove('on');
+    document.getElementById('speak-btn').disabled = false;
+    document.getElementById('pause-btn').disabled = true;
+    document.getElementById('stop-btn').disabled = true;
+    document.getElementById('pause-btn').textContent = '⏸ Pause';
+    paused = false;
+    addHistory(txt.slice(0,80)+(txt.length>80?'…':''), 'tts');
+  };
+  window.speechSynthesis.speak(u);
+}
+
+function pauseResume(){
+  if(!window.speechSynthesis) return;
+  if(paused){
+    window.speechSynthesis.resume(); paused = false;
+    document.getElementById('pause-btn').textContent = '⏸ Pause';
+    document.getElementById('speak-vis').classList.add('on');
+  } else {
+    window.speechSynthesis.pause(); paused = true;
+    document.getElementById('pause-btn').textContent = '▶ Resume';
+    document.getElementById('speak-vis').classList.remove('on');
+  }
+}
+
+function stopSpeak(){
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  document.getElementById('speak-vis').classList.remove('on');
+  document.getElementById('speak-btn').disabled = false;
+  document.getElementById('pause-btn').disabled = true;
+  document.getElementById('stop-btn').disabled = true;
+  document.getElementById('pause-btn').textContent = '⏸ Pause';
+  paused = false;
+}
+
+function loadPhrase(t){
+  document.getElementById('tts-text').value = t;
+  updateChar(); showToast('✨ Phrase loaded!'); doSpeak();
+}
+
+// ══════════════════════════════════════
+//  SLIDERS + CHAR COUNT
+// ══════════════════════════════════════
+function slVal(n){
+  var v = document.getElementById('sl-'+n).value;
+  var e = document.getElementById('v-'+n);
+  if(n==='rate')   e.textContent = parseFloat(v).toFixed(1)+'×';
+  else if(n==='pitch') e.textContent = parseFloat(v).toFixed(1);
+  else             e.textContent = Math.round(v*100)+'%';
+}
+function updateChar(){
+  var l = document.getElementById('tts-text').value.length;
+  var el = document.getElementById('char-cnt');
+  el.textContent = l;
+  el.style.color = l>1800 ? 'var(--accent2)' : 'var(--text3)';
+}
+
+// ══════════════════════════════════════
+//  HISTORY
+// ══════════════════════════════════════
+function addHistory(txt, type){
+  var entry = {
+    txt: txt,
+    type: type,
+    time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
+  };
+  history.unshift(entry);
+  if(history.length > 30) history.pop();
+  renderHistory();
+}
+
+function renderHistory(){
+  var el = document.getElementById('hist-list');
+  if(!history.length){
+    el.innerHTML = '<div class="empty-state"><div class="es-icon">📭</div><p>No history yet.<br/>Start speaking or typing<br/>to see your sessions here.</p></div>';
+    return;
+  }
+  el.innerHTML = history.map(function(h, i){
+    return '<div class="hist-item">'
+      + '<span class="hi-icon">'+(h.type==='stt'?'🎤':'🔊')+'</span>'
+      + '<div class="hi-body">'
+      +   '<div class="hi-text">'+escHtml(h.txt)+'</div>'
+      +   '<div class="hi-meta">'
+      +     '<span class="hi-type '+h.type+'">'+(h.type==='stt'?'STT':'TTS')+'</span>'
+      +     '<span class="hi-time">'+h.time+'</span>'
+      +   '</div>'
+      +   '<div class="hi-actions">'
+      +     '<button class="hi-btn" onclick="histCopy('+i+')">📋 Copy</button>'
+      +     (h.type==='stt' ? '<button class="hi-btn" onclick="histToTTS('+i+')">🔊 Speak</button>' : '')
+      +     (h.type==='tts' ? '<button class="hi-btn" onclick="histSpeak('+i+')">▶ Play</button>' : '')
+      +   '</div>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function escHtml(t){
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function histCopy(i){
+  var t = history[i].txt;
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(t).then(function(){ showToast('📋 Copied!'); });
+  } else {
+    var a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();
+    document.execCommand('copy');document.body.removeChild(a);showToast('📋 Copied!');
+  }
+}
+function histToTTS(i){
+  document.getElementById('tts-text').value = history[i].txt;
+  updateChar(); switchTab('tts'); showToast('📤 Sent to TTS!');
+}
+function histSpeak(i){
+  document.getElementById('tts-text').value = history[i].txt;
+  updateChar(); switchTab('tts');
+  setTimeout(doSpeak, 200);
+}
+function clearHistory(){
+  history = []; renderHistory(); showToast('🗑️ History cleared');
+}
+
+// ══════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════
+var toastTO;
+function showToast(msg){
+  var el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTO);
+  toastTO = setTimeout(function(){ el.classList.remove('show'); }, 2600);
+}
+
+// ══════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function(){
+  initSTT();
+  initTTS();
+});
+</script>
+</body>
+</html>
